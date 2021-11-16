@@ -1,0 +1,49 @@
+# This is a basic workflow to help you get started with Actions
+
+name: Backend Chat CI/CD
+
+# Controls when the workflow will run
+on:
+  # Triggers the workflow on push or pull request events but only for the master branch
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  ci:
+    runs-on: node:14
+    container:
+      image: node
+      
+    
+    steps:
+      - uses: actions/checkout@v1
+
+      # Runs a single command using the runners shell
+      - name: Install & Tests
+        run: | 
+          npm install
+          npm test
+  cd: 
+      runs-on: node-14
+      needs: ci
+      
+      steps:
+        - uses: actions/checkout@v1
+        - name: Docker login
+          run: docker login -u ${{ secrets.DOCKER_USER }} -p ${{ secrets.DOCKER_PASSWORD }}
+        - name: Build
+          run: docker build -t back .
+        - name: Tags
+          run: |  
+             docker tag back ${{ secrets.DOCKER_USER }}/back:${{ github.sha }}
+             docker tag back ${{ secrets.DOCKER_USER }}/back:latest
+        - name: Push
+          run: |
+             docker push ${{ secrets.DOCKER_USER }}/back:${{ github.sha }}
+             docker push ${{ secrets.DOCKER_USER }}/back:latest    
